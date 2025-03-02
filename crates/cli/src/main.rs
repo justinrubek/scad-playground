@@ -50,6 +50,42 @@ fn car() -> Scad {
     body + front_axle + back_axle
 }
 
+fn triangular_prism(b: f64, d: f64, h: f64, h_z: f64) -> Scad {
+    let mut points = Pt2s::new();
+    for point in [Pt2::new(0., 0.), Pt2::new(b, 0.), Pt2::new(d, h)] {
+        points.push(point)
+    }
+    let mut face = polygon!(points);
+    face = linear_extrude!(h_z, face;);
+    face = rotate!([90., 90., 90.], face;);
+    face = translate!([-h_z/2., 0., 0.], face;);
+
+    face
+}
+
+fn roof(l: f64) -> Scad {
+    let h = l / 8. + 1.999;
+    let mut a = triangular_prism(3., 3., l / 4., l);
+    a = translate!([0., 0., h], a;);
+    a = color!("red", a;);
+    let mut b = triangular_prism(3., 3., l / 4., l);
+    b = translate!([0., 0., h], b;);
+    b = color!("blue", b;);
+    b = mirror!([0., 1., 0.], b;);
+
+    a + b
+}
+
+fn house(l: f64) -> Scad {
+    let body = cube!([l, l / 2., l / 8.], true);
+    let roof = roof(l);
+
+    let mut chimney = cube!([0.5, 0.5, 3.]);
+    chimney = translate!([5., 1., 1.], chimney;);
+
+    body + roof + chimney
+}
+
 fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
@@ -59,8 +95,8 @@ fn main() -> Result<()> {
             let cmd = generate.command;
             match cmd {
                 GenerateCommands::Default => {
-                    let car = car();
-                    scad_file!(32, "default.scad", fa=1.0, fs=0.4, car;);
+                    scad_file!(32, "car.scad", fa=1.0, fs=0.4, car(););
+                    scad_file!(32, "house.scad", fa=1.0, fs=0.4, house(16.););
                 }
             }
         }
