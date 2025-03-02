@@ -17,13 +17,10 @@ fn main() -> Result<()> {
             let cmd = generate.command;
             match cmd {
                 GenerateCommands::Default => {
-                    let cube = cube!(2.);
-                    let sphere = sphere!(1.0, fn=128);
-                    let mut sphere_b = sphere!(1.0, fn=256);
-                    sphere_b = translate!([1.2, 0.0, 0.0], sphere_b;);
+                    let cube = cube!([25., 35., 55.], true);
 
-                    let difference = difference!(cube; sphere; sphere_b;);
-                    difference.save("default.scad");
+                    let finished = cube;
+                    finished.save("default.scad");
                 }
             }
         }
