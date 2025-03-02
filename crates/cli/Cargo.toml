@@ -1,5 +1,6 @@
 [dependencies]
 clap = { version = "4", features = ["derive"] }
+scad_tree = "0.4.2"
 # serde = { workspace = true }
 # serde_json = { workspace = true }
 thiserror = { workspace = true }

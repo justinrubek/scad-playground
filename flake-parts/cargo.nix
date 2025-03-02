@@ -50,6 +50,14 @@
           cargoArtifacts = deps-only;
         }
         // common-build-args);
+
+      watch = pkgs.writeShellApplication {
+        name = "watch-scad";
+        runtimeInputs = [inputs'.awatch.packages.awatch];
+        text = ''
+          awatch './{crates,Cargo.toml,Cargo.lock,public}' cargo run generate default
+        '';
+      };
     };
 
     checks = {

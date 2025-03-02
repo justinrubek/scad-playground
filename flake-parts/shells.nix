@@ -14,6 +14,7 @@
       pkgs.bacon
       pkgs.cargo-audit
       pkgs.cargo-udeps
+      pkgs.openscad-unstable
       rust-toolchain
       treefmt
     ];

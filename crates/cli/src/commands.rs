@@ -7,21 +7,16 @@ pub(crate) struct Args {
 
 #[derive(clap::Subcommand, Debug)]
 pub(crate) enum Commands {
-    Hello(Hello),
+    Generate(Generate),
 }
 
 #[derive(clap::Args, Debug)]
-pub(crate) struct Hello {
+pub(crate) struct Generate {
     #[clap(subcommand)]
-    pub command: HelloCommands,
+    pub command: GenerateCommands,
 }
 
 #[derive(clap::Subcommand, Debug)]
-pub(crate) enum HelloCommands {
-    World,
-    Name {
-        #[arg()]
-        name: String,
-    },
-    Error,
+pub(crate) enum GenerateCommands {
+    Default,
 }
