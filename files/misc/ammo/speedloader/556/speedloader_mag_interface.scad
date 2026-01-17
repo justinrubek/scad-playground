@@ -12,7 +12,6 @@ outer_bevel = 2.5;       // Bevel size on outer corners
 rect_notch_width = 12;        // Width of notch across the opening
 rect_notch_thickness = 6;     // Thickness along length (half in rim, half in cavity)
 rect_notch_corner_radius = 1.5; // Radius for rounded corners on the rectangle itself
-rect_notch_fillet_radius = 2;   // Radius for fillets where notch sides meet cavity edge
 
 // Circular notch (at other end) - centered on opposite cavity edge, offset along length
 circ_notch_diameter = 9;
@@ -41,6 +40,25 @@ module beveled_cube(size, bevel) {
             cube([size[0], size[1] - 2*bevel, size[2] - 2*bevel]);
         translate([bevel, 0, bevel])
             cube([size[0] - 2*bevel, size[1], size[2] - 2*bevel]);
+    }
+}
+
+module internal_corner_fillet(r, h) {
+    // Creates a quarter-round fillet cutter for internal corners
+    // Cylinder at origin (0,0)
+    difference() {
+        cube([r, r, h]);
+        cylinder(r=r, h=h);
+    }
+}
+
+module internal_corner_fillet_right(r, h) {
+    // Creates a quarter-round fillet cutter for right side corner
+    // Cylinder at (r, 0) - cube extends in -X, +Y from corner
+    difference() {
+        cube([r, r, h]);
+        translate([r, 0, 0])
+            cylinder(r=r, h=h);
     }
 }
 
@@ -88,5 +106,21 @@ difference() {
                rim_width + rect_notch_thickness/2 + inner_length - circ_notch_length_offset,  // On cavity back edge, offset inward
                wall_thickness]) {
         cylinder(d=circ_notch_diameter, h=inner_height);
+    }
+
+    // Internal corner fillets where rectangular notch side walls meet cavity front edge
+    // Left corner
+    translate([outer_width/2 - rect_notch_width/2 - rect_notch_corner_radius,
+               rim_width + rect_notch_thickness/2 - rect_notch_corner_radius,
+               wall_thickness]) {
+        rotate([0, 0, 0])
+            internal_corner_fillet(rect_notch_corner_radius, inner_height);
+    }
+
+    // Right corner
+    translate([outer_width/2 + rect_notch_width/2,
+               rim_width + rect_notch_thickness/2 - rect_notch_corner_radius,
+               wall_thickness]) {
+        internal_corner_fillet_right(rect_notch_corner_radius, inner_height);
     }
 }
