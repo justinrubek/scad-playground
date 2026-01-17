@@ -26,7 +26,7 @@ inner_corner_radius = 3;  // Radius for rounded inside edges
 
 // Calculated outer dimensions (ensures rim_width beyond all features)
 outer_width = max(inner_width + 2*rim_width, rect_notch_width + 2*rim_width, circ_notch_diameter + 2*rim_width);
-outer_length = inner_length + rect_notch_thickness/2 + circ_notch_diameter/2 + 2*rim_width;
+outer_length = inner_length + rect_notch_thickness/2 + (circ_notch_diameter/2 - circ_notch_length_offset) + 2*rim_width;
 outer_height = inner_depth + wall_thickness;
 inner_height = inner_depth + 1;  // Slightly taller to cut through cleanly
 
