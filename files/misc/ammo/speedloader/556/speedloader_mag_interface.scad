@@ -22,6 +22,7 @@ inner_length = 60.909;       // Length of cavity
 inner_width = 23.698;        // Width of cavity
 inner_depth = 38.1;        // Depth from bottom to top of cavity
 inner_corner_radius = 1.575;  // Radius for rounded inside edges
+bottom_edge_radius = 2;      // Radius for rounded edges at bottom of cavity (left/right sides)
 
 // Calculated outer dimensions (ensures rim_width beyond all features)
 outer_width = max(inner_width + 2*rim_width, rect_notch_width + 2*rim_width, circ_notch_diameter + 2*rim_width);
@@ -63,13 +64,36 @@ module internal_corner_fillet_right(r, h) {
     }
 }
 
+module bottom_edge_fillet_left(r, l) {
+    // Creates a quarter-round concave fillet for left bottom edge
+    // Curved surface faces right (into cavity)
+    difference() {
+        cube([r, l, r]);
+        translate([r, 0, r])
+            rotate([-90, 0, 0])
+                cylinder(r=r, h=l);
+    }
+}
+
+module bottom_edge_fillet_right(r, l) {
+    // Creates a quarter-round concave fillet for right bottom edge
+    // Curved surface faces left (into cavity)
+    difference() {
+        cube([r, l, r]);
+        translate([0, 0, r])
+            rotate([-90, 0, 0])
+                cylinder(r=r, h=l);
+    }
+}
+
 // === MAIN MODEL ===
 
 $fn = 64;  // Resolution for curves
 
-difference() {
-    // Outer shell with beveled edges
-    beveled_cube([outer_width, outer_length, outer_height], outer_bevel);
+union() {
+    difference() {
+        // Outer shell with beveled edges
+        beveled_cube([outer_width, outer_length, outer_height], outer_bevel);
 
     // Inner cavity with rounded edges
     // Positioned so there's rim_width + rect_notch_thickness/2 from front edge
@@ -123,5 +147,21 @@ difference() {
                rim_width + rect_notch_thickness/2 - rect_notch_corner_radius,
                wall_thickness]) {
         internal_corner_fillet_right(rect_notch_corner_radius, inner_height);
+    }
+    }
+
+    // Bottom edge fillets on left and right sides of cavity (added material for concave curve)
+    // Left side bottom edge - fillet fills the corner inward (curved surface faces right)
+    translate([(outer_width - inner_width)/2,
+               rim_width + rect_notch_thickness/2,
+               wall_thickness]) {
+        bottom_edge_fillet_left(bottom_edge_radius, inner_length);
+    }
+
+    // Right side bottom edge - fillet fills the corner inward (curved surface faces left)
+    translate([(outer_width + inner_width)/2 - bottom_edge_radius,
+               rim_width + rect_notch_thickness/2,
+               wall_thickness]) {
+        bottom_edge_fillet_right(bottom_edge_radius, inner_length);
     }
 }
