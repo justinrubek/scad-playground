@@ -32,14 +32,15 @@ inner_height = inner_depth + 1;  // Slightly taller to cut through cleanly
 // === MODULES ===
 
 module beveled_cube(size, bevel) {
-    // Create a cube with beveled/chamfered edges
+    // Create a cube with chamfered vertical corners only - diagonal cuts at corners
     hull() {
-        translate([bevel, bevel, 0])
-            cube([size[0] - 2*bevel, size[1] - 2*bevel, size[2]]);
-        translate([0, bevel, bevel])
-            cube([size[0], size[1] - 2*bevel, size[2] - 2*bevel]);
-        translate([bevel, 0, bevel])
-            cube([size[0] - 2*bevel, size[1], size[2] - 2*bevel]);
+        // Place cylinders at each corner
+        for(x = [bevel, size[0] - bevel]) {
+            for(y = [bevel, size[1] - bevel]) {
+                translate([x, y, 0])
+                    cylinder(r=bevel, h=size[2], $fn=4);  // $fn=4 makes it diamond-shaped for chamfer
+            }
+        }
     }
 }
 
