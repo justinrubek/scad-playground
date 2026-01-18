@@ -57,6 +57,27 @@ outer_length = inner_length + rect_notch_thickness/2 + (circ_notch_diameter/2 - 
 outer_height = inner_depth + wall_thickness;
 inner_height = inner_depth + 1;  // Slightly taller to cut through cleanly
 
+// === CLIP PARAMETERS ===
+// Pickup clip dimensions (from technical drawing)
+clip_outer_width = 12;           // Outer width at base (not including chamfers)
+clip_outer_height = 6.2;         // Outer height
+clip_length = 289.5;             // Length of clip extrusion
+clip_corner_chamfer = 0.866;     // Chamfer size on outer corners
+
+// Inner cavity dimensions
+clip_cavity_bottom_width = 8.4;  // Inner cavity width at bottom
+clip_cavity_wall_angle = 135;    // Angle of cavity walls from horizontal
+clip_bottom_radius = 0.919;      // Radius at bottom corners of cavity
+
+// Gripping notch (inward projection near top)
+clip_top_opening = 1.150;        // Width of top opening
+clip_notch_width = 0.962;        // Width at gripping notch
+clip_notch_angle = 158;          // Angle of notch section
+clip_notch_length = 1.602;       // Length of angled notch section
+clip_notch_radius = 0.62;        // Radius at notch transition
+clip_notch_depth = 0.6;          // Depth of notch step
+clip_dimension = 0.635;          // Additional dimension
+
 // === MODULES ===
 
 module beveled_cube(size, bevel) {
@@ -149,11 +170,98 @@ module round_profile() {
     }
 }
 
-// === MAIN MODEL ===
+module clip_profile() {
+    // Creates 2D profile using exact vertex positions
+    // Your coordinates, then mirrored across x = 6.5
 
-$fn = 64;  // Resolution for curves
+    polygon([
+        // Left side (your exact coordinates)
+        [0.5, 0],
+        [0, 0.5],
+        [0, 6.7],
+        [0.5, 7.2],
+        [1.65, 7.2],
+        [1.65, 6.238],
+        [2.25, 4.753],
+        [2.25, 4.133],
+        [1.65, 4.133],
+        [1.65, 3.498],
+        [2.3, 2.848],
+        [6.5, 2.848],
+        [6.5, 0],
+        [0.5, 0],
+        // Right side (mirrored across x=6.5, so x' = 13 - x)
+        [12.5, 0],
+        [6.5, 0],
+        [6.5, 2.848],
+        [10.7, 2.848],
+        [11.35, 3.498],
+        [11.35, 4.133],
+        [10.75, 4.133],
+        [10.75, 4.753],
+        [11.35, 6.238],
+        [11.35, 7.2],
+        [12.5, 7.2],
+        [13, 6.7],
+        [13, 0.5],
+        [12.5, 0]
+    ]);
+}
 
-union() {
+module pickup_clip() {
+    // Creates the complete pickup clip by extruding the profile
+    // Plus short cylinders at one end and grip extension at other end
+
+    grip_length = 16;  // Length of grip extension
+    grip_height = 2.848;  // Height of grip (bottom section only)
+
+    union() {
+        linear_extrude(height = clip_length)
+            clip_profile();
+
+        // Left cylinder at one end - tangent to top edge, 2.5mm long
+        // Center at y = 7.2 - 0.6 = 6.6 to be tangent
+        translate([1.65, 7.2, 0.6])
+            rotate([90, 0, 0])
+                cylinder(d=1.2, h=2.5);
+
+        // Right cylinder at one end
+        translate([11.35, 7.2, 0.6])
+            rotate([90, 0, 0])
+                cylinder(d=1.2, h=2.5);
+
+        // Grip extension with triangular grooves
+        difference() {
+            // GRIP BASE
+            translate([0, 0, clip_length])
+                linear_extrude(height = grip_length)
+                    polygon([
+                        [0.5, 0],
+                        [12.5, 0],
+                        [13, 0.5],
+                        [13, grip_height],
+                        [0, grip_height],
+                        [0, 0.5]
+                    ]);
+
+            // Triangular groove cutters
+            for (i = [0 : 3]) {
+                translate([13, grip_height, clip_length + grip_length - 10 + i * 3 - 1.4])
+                    rotate([0, -90, 0])
+                        linear_extrude(height = 13)
+                            polygon([
+                                [0, 0],
+                                [2, 0],
+                                [1, -1.5]
+                            ]);
+            }
+        }
+    }
+}
+
+module speedloader() {
+    // Creates the complete speedloader with magazine interface
+    union() {
     difference() {
         // Outer shell with beveled edges + extension below
         union() {
@@ -294,4 +402,13 @@ union() {
                wall_thickness]) {
         bottom_edge_fillet_right(bottom_edge_radius, inner_length);
     }
+    }
 }
+
+// === RENDER SELECTION ===
+// Comment/uncomment to choose which part to render
+
+$fn = 64;  // Resolution for curves
+
+// speedloader();
+pickup_clip();
