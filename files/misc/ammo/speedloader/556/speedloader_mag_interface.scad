@@ -49,6 +49,7 @@ speedloader_depth = 336;     // Total depth of speedloader below mag interface
 trap_height = trap_leg_length * sin(trap_angle);  // Calculated trapezoid height
 entrance_chamfer = 8;        // Depth of chamfer at bottom entrance (softens edges for insertion)
 entrance_flare = 1.8;        // Scale factor for entrance flare (how much wider the opening gets)
+clip_junction_fillet = 2;    // Fillet radius where clip cutout meets round cutout (improves printability)
 
 // Calculated outer dimensions (ensures rim_width beyond all features)
 outer_width = max(inner_width + 2*rim_width, rect_notch_width + 2*rim_width, circ_notch_diameter + 2*rim_width);
@@ -256,6 +257,27 @@ union() {
                 cube([clip_width, clip_height, 0.01]);
         }
     }
+
+    }
+
+    // Junction chamfers where clip cutout meets round cutout - ADDS material to support internal corners
+    // These run the full length of the speedloader along the Z axis, improving printability with 45-degree slopes
+    // Left side chamfer - at the +Y edge of clip cutout where it meets the round cutout
+    translate([outer_width/2 - casing_base/2 - clip_junction_fillet,
+               rim_width + rect_notch_thickness/2 + inner_length/2 - trap_height/2 + round_offset_y - casing_height/2 + clip_overlap + clip_height - clip_junction_fillet,
+               wall_thickness - clip_rim_thickness]) {
+        translate([0, 0, -(wall_thickness - clip_rim_thickness + speedloader_depth - entrance_chamfer)])
+            rotate([0, 0, 45])
+                cube([clip_junction_fillet * sqrt(2), clip_junction_fillet * sqrt(2), wall_thickness - clip_rim_thickness + speedloader_depth - entrance_chamfer]);
+    }
+
+    // Right side chamfer - at the +Y edge of clip cutout where it meets the round cutout
+    translate([outer_width/2 + casing_base/2,
+               rim_width + rect_notch_thickness/2 + inner_length/2 - trap_height/2 + round_offset_y - casing_height/2 + clip_overlap + clip_height,
+               wall_thickness - clip_rim_thickness]) {
+        translate([0, 0, -(wall_thickness - clip_rim_thickness + speedloader_depth - entrance_chamfer)])
+            rotate([0, 0, -45])
+                cube([clip_junction_fillet * sqrt(2), clip_junction_fillet * sqrt(2), wall_thickness - clip_rim_thickness + speedloader_depth - entrance_chamfer]);
     }
 
     // Bottom edge fillets on left and right sides of cavity (added material for concave curve)
