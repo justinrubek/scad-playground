@@ -47,6 +47,8 @@ clip_rim_thickness = 3;      // Thickness of rim left between clip cutout and in
 // Speedloader extension
 speedloader_depth = 336;     // Total depth of speedloader below mag interface
 trap_height = trap_leg_length * sin(trap_angle);  // Calculated trapezoid height
+entrance_chamfer = 8;        // Depth of chamfer at bottom entrance (softens edges for insertion)
+entrance_flare = 1.8;        // Scale factor for entrance flare (how much wider the opening gets)
 
 // Calculated outer dimensions (ensures rim_width beyond all features)
 outer_width = max(inner_width + 2*rim_width, rect_notch_width + 2*rim_width, circ_notch_diameter + 2*rim_width);
@@ -230,6 +232,29 @@ union() {
                wall_thickness - clip_rim_thickness]) {
         translate([0, 0, -(wall_thickness - clip_rim_thickness + speedloader_depth + 0.1)])
             cube([clip_width, clip_height, wall_thickness - clip_rim_thickness + speedloader_depth + 0.1]);
+    }
+
+    // Entrance chamfer for round cutout - creates dramatic funnel at bottom entrance for easier insertion
+    // Wide at bottom (entrance), narrows to normal size going up
+    translate([outer_width/2 + round_offset_x,
+               rim_width + rect_notch_thickness/2 + inner_length/2 - trap_height/2 + round_offset_y,
+               -speedloader_depth]) {
+        scale([entrance_flare, entrance_flare, 1])
+            linear_extrude(height = entrance_chamfer, scale = 1/entrance_flare)
+                round_profile();
+    }
+
+    // Entrance chamfer for clip cutout - creates dramatic flare on rectangular entrance
+    // Wide at bottom, narrows to normal size going up
+    translate([outer_width/2 - clip_width/2,
+               rim_width + rect_notch_thickness/2 + inner_length/2 - trap_height/2 + round_offset_y - casing_height/2 + clip_overlap,
+               -speedloader_depth]) {
+        hull() {
+            translate([-(clip_width * (entrance_flare - 1) / 2), -(clip_height * (entrance_flare - 1) / 2), 0])
+                cube([clip_width * entrance_flare, clip_height * entrance_flare, 0.01]);
+            translate([0, 0, entrance_chamfer])
+                cube([clip_width, clip_height, 0.01]);
+        }
     }
     }
 
