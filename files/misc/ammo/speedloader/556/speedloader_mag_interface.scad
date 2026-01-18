@@ -10,12 +10,12 @@ outer_bevel = 2.5;       // Bevel size on outer corners
 
 // Rectangular notch (at one end) - centered on cavity edge
 rect_notch_width = 12;        // Width of notch across the opening
-rect_notch_thickness = 7.1;     // Thickness along length (half in rim, half in cavity)
+rect_notch_thickness = 7.9;     // Thickness along length (half in rim, half in cavity)
 rect_notch_corner_radius = 1.575; // Radius for rounded corners on the rectangle itself
 
 // Circular notch (at other end) - centered on opposite cavity edge, offset along length
 circ_notch_diameter = 8;
-circ_notch_length_offset = 2.2;  // Offset from cavity edge along length direction (inward)
+circ_notch_length_offset = 2.4;  // Offset from cavity edge along length direction (inward)
 
 // Inner cavity dimensions (the main magazine opening)
 inner_length = 60.909;       // Length of cavity
@@ -23,6 +23,24 @@ inner_width = 23.698;        // Width of cavity
 inner_depth = 38.1;        // Depth from bottom to top of cavity
 inner_corner_radius = 1.575;  // Radius for rounded inside edges
 bottom_edge_radius = 2;      // Radius for rounded edges at bottom of cavity (left/right sides)
+
+// Round cutout dimensions (for ammunition)
+casing_base = 10;            // Width of rectangular base
+casing_height = 43;          // Height of rectangular base
+base_chamfer_size = 0.635;   // Base length of equilateral triangle chamfer at bottom corners
+trap_short_base = 3;         // Short base of trapezoid (point)
+trap_long_base = 10;         // Long base of trapezoid (lines up with casing)
+trap_leg_length = 16.06;        // Length of trapezoid leg
+trap_angle = 77.5;           // Angle of trapezoid
+
+// Round cutout position offsets
+round_offset_x = 0;          // X offset from center (positive = right, negative = left)
+round_offset_y = -1;          // Y offset along length (positive = toward circular notch, negative = toward rect notch)
+round_offset_z = 0;          // Z offset (positive = higher/up, negative = lower/down)
+
+// Speedloader extension
+speedloader_depth = 336;     // Total depth of speedloader below mag interface
+trap_height = trap_leg_length * sin(trap_angle);  // Calculated trapezoid height
 
 // Calculated outer dimensions (ensures rim_width beyond all features)
 outer_width = max(inner_width + 2*rim_width, rect_notch_width + 2*rim_width, circ_notch_diameter + 2*rim_width);
@@ -86,14 +104,54 @@ module bottom_edge_fillet_right(r, l) {
     }
 }
 
+module round_profile() {
+    // Creates 2D profile of a round (ammunition)
+    // Rectangle base with chamfered bottom corners + trapezoid point
+
+    // Calculate chamfer height for equilateral triangle
+    chamfer_height = base_chamfer_size * sqrt(3) / 2;
+
+    union() {
+        // Rectangle base with chamfered bottom corners
+        polygon([
+            // Bottom left, chamfered
+            [-casing_base/2 + base_chamfer_size, -casing_height/2],
+            [-casing_base/2, -casing_height/2 + chamfer_height],
+            // Left side
+            [-casing_base/2, casing_height/2],
+            // Top left
+            [-casing_base/2, casing_height/2],
+            // Top right
+            [casing_base/2, casing_height/2],
+            // Right side
+            [casing_base/2, -casing_height/2 + chamfer_height],
+            // Bottom right, chamfered
+            [casing_base/2 - base_chamfer_size, -casing_height/2]
+        ]);
+
+        // Trapezoid point on top
+        translate([0, casing_height/2 + trap_height/2, 0])
+        polygon([
+            [-trap_long_base/2, -trap_height/2],
+            [trap_long_base/2, -trap_height/2],
+            [trap_short_base/2, trap_height/2],
+            [-trap_short_base/2, trap_height/2]
+        ]);
+    }
+}
+
 // === MAIN MODEL ===
 
 $fn = 64;  // Resolution for curves
 
 union() {
     difference() {
-        // Outer shell with beveled edges
-        beveled_cube([outer_width, outer_length, outer_height], outer_bevel);
+        // Outer shell with beveled edges + extension below
+        union() {
+            beveled_cube([outer_width, outer_length, outer_height], outer_bevel);
+            translate([0, 0, -speedloader_depth])
+                beveled_cube([outer_width, outer_length, speedloader_depth], outer_bevel);
+        }
 
     // Inner cavity with rounded edges
     // Positioned so there's rim_width + rect_notch_thickness/2 from front edge
@@ -147,6 +205,16 @@ union() {
                rim_width + rect_notch_thickness/2 - rect_notch_corner_radius,
                wall_thickness]) {
         internal_corner_fillet_right(rect_notch_corner_radius, inner_height);
+    }
+
+    // Round cutout hole going down through entire speedloader
+    // Centered in cavity, rectangle base at rectangular notch side, trapezoid at circular notch side
+    translate([outer_width/2 + round_offset_x,
+               rim_width + rect_notch_thickness/2 + inner_length/2 - trap_height/2 + round_offset_y,
+               outer_height + round_offset_z]) {
+        scale([1, 1, -1])
+            linear_extrude(height = speedloader_depth + outer_height+0.01)
+                round_profile();
     }
     }
 
