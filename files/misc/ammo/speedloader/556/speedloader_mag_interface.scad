@@ -38,6 +38,12 @@ round_offset_x = 0;          // X offset from center (positive = right, negative
 round_offset_y = -1;          // Y offset along length (positive = toward circular notch, negative = toward rect notch)
 round_offset_z = 0;          // Z offset (positive = higher/up, negative = lower/down)
 
+// Pickup clip cutout (for loading tool)
+clip_width = 13.109;         // Width of clip cutout
+clip_height = 7.62;          // Height (depth in Z) of clip cutout
+clip_overlap = -2.851;       // Overlap with round cutout (negative = extends below round cutout)
+clip_rim_thickness = 3;      // Thickness of rim left between clip cutout and inner cavity
+
 // Speedloader extension
 speedloader_depth = 336;     // Total depth of speedloader below mag interface
 trap_height = trap_leg_length * sin(trap_angle);  // Calculated trapezoid height
@@ -215,6 +221,15 @@ union() {
         scale([1, 1, -1])
             linear_extrude(height = speedloader_depth + outer_height+0.01)
                 round_profile();
+    }
+
+    // Pickup clip cutout - rectangular slot at bottom of round cutout, going down parallel to round hole
+    // Positioned to leave clip_rim_thickness between it and the inner cavity, extends all the way through bottom
+    translate([outer_width/2 - clip_width/2,
+               rim_width + rect_notch_thickness/2 + inner_length/2 - trap_height/2 + round_offset_y - casing_height/2 + clip_overlap,
+               wall_thickness - clip_rim_thickness]) {
+        translate([0, 0, -(wall_thickness - clip_rim_thickness + speedloader_depth + 0.1)])
+            cube([clip_width, clip_height, wall_thickness - clip_rim_thickness + speedloader_depth + 0.1]);
     }
     }
 
